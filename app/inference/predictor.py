@@ -15,28 +15,41 @@ during training before loading weights.
 
 from __future__ import annotations
 
-import sys
+import json
 from functools import lru_cache
 from pathlib import Path
 
 import torch
 from transformers import AutoTokenizer
 
-# app/ holds the dashboard code and the bundled model checkpoints.
-APP_DIR = Path(__file__).resolve().parents[1]
-# Project root is still needed to reuse the exact training/preprocessing modules.
-ROOT = APP_DIR.parent
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+from inference.model import TransformerClassifier
+from inference.preprocess import preprocess
 
-from preprocessing.clean import preprocess  # noqa: E402
-from training.classifier import TransformerClassifier  # noqa: E402
-from training.runner import MODEL_SPECS, load_label_meta  # noqa: E402
+# app/ holds the dashboard code, the bundled model checkpoints, and the label
+# metadata. Everything the deployed dashboard needs lives inside this folder.
+APP_DIR = Path(__file__).resolve().parents[1]
 
 CORPUS_ID = "undersampling_no_environment"
-SPLITS_DIR = ROOT / "data" / "splits" / CORPUS_ID
 CKPT_DIR = APP_DIR / "models" / CORPUS_ID
+LABELS_FILE = CKPT_DIR / "label2id.json"
 MAX_LENGTH = 512
+
+# key -> (hf_name, freeze_until); mirrors the training MODEL_SPECS exactly.
+MODEL_SPECS: list[tuple[str, str, int | None]] = [
+    ("bert", "bert-base-uncased", None),
+    ("distilbert", "distilbert-base-uncased", 3),
+    ("roberta", "roberta-base", 9),
+    ("electra", "google/electra-base-discriminator", 9),
+]
+
+
+def load_label_meta(labels_file: Path) -> tuple[list[str], dict[str, int]]:
+    with labels_file.open(encoding="utf-8") as f:
+        meta = json.load(f)
+    labels: list[str] = list(meta["labels"])
+    label2id: dict[str, int] = {str(k): int(v) for k, v in meta["label2id"].items()}
+    return labels, label2id
+
 
 # CPU keeps the demo robust across machines; DistilBERT stays well under the
 # 5 s latency target and the other encoders are still comfortable.
@@ -61,7 +74,7 @@ DEFAULT_MODEL = "distilbert"
 @lru_cache(maxsize=1)
 def get_labels() -> list[str]:
     """Ordered class names straight from ``label2id.json`` (index == class id)."""
-    labels, _ = load_label_meta(SPLITS_DIR)
+    labels, _ = load_label_meta(LABELS_FILE)
     return labels
 
 

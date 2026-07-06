@@ -1,0 +1,8 @@
+# Runtime dependencies for the Streamlit dashboard (Streamlit Community Cloud
+# picks this up because it sits next to the entrypoint app/streamlit_app.py).
+streamlit>=1.36
+pandas>=2.0
+torch>=2.2
+transformers>=4.40
+nltk>=3.8
+pdfplumber>=0.11
