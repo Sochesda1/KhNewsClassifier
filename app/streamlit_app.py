@@ -48,13 +48,104 @@ DEFAULT_COLOR = "#64748b"
 
 MIN_WORDS = 50
 
-CSS = """
-<style>
-    /* hide default chrome */
-    #MainMenu, footer, header[data-testid="stHeader"] {visibility: hidden;}
-    .block-container {padding-top: 1rem; padding-bottom: 2rem; max-width: 1180px;}
+# Two palettes driven by a session-state toggle. Every custom component reads
+# these via CSS variables so light/dark stay in sync and keep proper contrast.
+THEMES = {
+    "light": {
+        "bg": "#f1f5f9",
+        "text": "#111827",
+        "text_muted": "#6b7280",
+        "text_soft": "#374151",
+        "card_bg": "#ffffff",
+        "card_border": "#e5e7eb",
+        "card_shadow": "0 1px 3px rgba(0,0,0,0.04)",
+        "stat_bg": "#f8fafc",
+        "stat_border": "#eef2f7",
+        "track": "#eef2f7",
+        "result_bg": "linear-gradient(135deg,#f5f3ff,#faf5ff)",
+        "result_border": "#ede9fe",
+        "pill_bg": "#ede9fe",
+        "pill_text": "#6d28d9",
+        "input_bg": "#ffffff",
+        "input_border": "#d1d5db",
+        "placeholder": "#9ca3af",
+    },
+    "dark": {
+        "bg": "#0b1120",
+        "text": "#f8fafc",
+        "text_muted": "#94a3b8",
+        "text_soft": "#cbd5e1",
+        "card_bg": "#1e293b",
+        "card_border": "#334155",
+        "card_shadow": "0 1px 3px rgba(0,0,0,0.4)",
+        "stat_bg": "#0f172a",
+        "stat_border": "#334155",
+        "track": "#334155",
+        "result_bg": "linear-gradient(135deg,#312e81,#1e1b4b)",
+        "result_border": "#4c1d95",
+        "pill_bg": "#4c1d95",
+        "pill_text": "#ddd6fe",
+        "input_bg": "#1e293b",
+        "input_border": "#334155",
+        "placeholder": "#64748b",
+    },
+}
 
-    .app-header {
+st.session_state.setdefault("theme", "light")
+
+
+def build_css(theme: str) -> str:
+    v = THEMES.get(theme, THEMES["light"])
+    return f"""
+<style>
+    :root {{
+        --bg: {v['bg']};
+        --text: {v['text']};
+        --text-muted: {v['text_muted']};
+        --text-soft: {v['text_soft']};
+        --card-bg: {v['card_bg']};
+        --card-border: {v['card_border']};
+        --card-shadow: {v['card_shadow']};
+        --stat-bg: {v['stat_bg']};
+        --stat-border: {v['stat_border']};
+        --track: {v['track']};
+        --result-bg: {v['result_bg']};
+        --result-border: {v['result_border']};
+        --pill-bg: {v['pill_bg']};
+        --pill-text: {v['pill_text']};
+        --input-bg: {v['input_bg']};
+        --input-border: {v['input_border']};
+        --placeholder: {v['placeholder']};
+    }}
+
+    /* hide default chrome */
+    #MainMenu, footer, header[data-testid="stHeader"] {{visibility: hidden;}}
+    .block-container {{padding-top: 1rem; padding-bottom: 2rem; max-width: 1180px;}}
+
+    /* Own the page background + base text so contrast is deterministic
+       regardless of Streamlit's own light/dark config. */
+    .stApp {{background: var(--bg);}}
+    .stApp, .stApp p, .stApp span, .stApp label, .stApp li,
+    [data-testid="stMarkdownContainer"] {{color: var(--text);}}
+    [data-testid="stCaptionContainer"], .stCaption, .stApp small {{color: var(--text-muted) !important;}}
+
+    /* Native inputs / selects / textareas */
+    .stTextArea textarea, .stTextInput input, [data-baseweb="input"] input {{
+        background: var(--input-bg) !important; color: var(--text) !important;
+        border-color: var(--input-border) !important;
+    }}
+    .stTextArea textarea::placeholder, .stTextInput input::placeholder {{color: var(--placeholder) !important;}}
+    [data-baseweb="select"] > div {{
+        background: var(--input-bg) !important; border-color: var(--input-border) !important;
+    }}
+    [data-baseweb="select"] * {{color: var(--text) !important;}}
+
+    /* Tables + metrics */
+    .stTable, .stTable th, .stTable td, [data-testid="stTable"] * {{color: var(--text) !important;}}
+    [data-testid="stMetricValue"] {{color: var(--text) !important;}}
+    [data-testid="stMetricLabel"] {{color: var(--text-muted) !important;}}
+
+    .app-header {{
         background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
         border-radius: 14px;
         padding: 18px 26px;
@@ -62,61 +153,69 @@ CSS = """
         align-items: center;
         justify-content: space-between;
         margin-bottom: 22px;
-    }
-    .brand {display: flex; align-items: center; gap: 14px;}
-    .brand-logo {
+    }}
+    .brand {{display: flex; align-items: center; gap: 14px;}}
+    .brand-logo {{
         width: 42px; height: 42px; border-radius: 11px;
         background: linear-gradient(135deg,#6366f1,#06b6d4);
         display:flex; align-items:center; justify-content:center;
         font-size: 20px; color:white; font-weight:700;
-    }
-    .brand-title {color:#f8fafc; font-size:20px; font-weight:700; line-height:1.1;}
-    .brand-sub {color:#94a3b8; font-size:11px; letter-spacing:2px; font-weight:600;}
+    }}
+    .brand-title {{color:#f8fafc; font-size:20px; font-weight:700; line-height:1.1;}}
+    .brand-sub {{color:#94a3b8; font-size:11px; letter-spacing:2px; font-weight:600;}}
 
-    .card {
-        background:#ffffff; border:1px solid #e5e7eb; border-radius:14px;
-        padding:22px 24px; box-shadow:0 1px 3px rgba(0,0,0,0.04);
-    }
-    .card-title {font-size:20px; font-weight:700; color:#111827; margin:0;}
-    .card-sub {font-size:13px; color:#6b7280; margin-top:2px;}
+    .card {{
+        background:var(--card-bg); border:1px solid var(--card-border); border-radius:14px;
+        padding:22px 24px; box-shadow:var(--card-shadow);
+    }}
+    .card-title {{font-size:20px; font-weight:700; color:var(--text); margin:0;}}
+    .card-sub {{font-size:13px; color:var(--text-muted); margin-top:2px;}}
 
-    .result-head {
-        background:linear-gradient(135deg,#f5f3ff,#faf5ff);
-        border:1px solid #ede9fe; border-radius:14px; padding:20px 24px;
+    .result-head {{
+        background:var(--result-bg);
+        border:1px solid var(--result-border); border-radius:14px; padding:20px 24px;
         margin-bottom:16px;
-    }
-    .result-kicker {font-size:11px; letter-spacing:1.5px; color:#6b7280; font-weight:700;}
-    .result-cat {font-size:34px; font-weight:800; margin:2px 0 0 0; text-transform:uppercase;}
-    .conf-pill {
-        float:right; background:#ede9fe; color:#6d28d9; font-weight:700;
+    }}
+    .result-kicker {{font-size:11px; letter-spacing:1.5px; color:var(--text-muted); font-weight:700;}}
+    .result-cat {{font-size:34px; font-weight:800; margin:2px 0 0 0; text-transform:uppercase;}}
+    .conf-pill {{
+        float:right; background:var(--pill-bg); color:var(--pill-text); font-weight:700;
         font-size:12px; padding:5px 12px; border-radius:999px;
-    }
+    }}
 
-    .stat-box {
-        background:#f8fafc; border:1px solid #eef2f7; border-radius:12px;
+    .stat-box {{
+        background:var(--stat-bg); border:1px solid var(--stat-border); border-radius:12px;
         padding:14px; text-align:center;
-    }
-    .stat-num {font-size:26px; font-weight:800; color:#111827;}
-    .stat-lab {font-size:12px; color:#6b7280; margin-top:2px;}
+    }}
+    .stat-num {{font-size:26px; font-weight:800; color:var(--text);}}
+    .stat-lab {{font-size:12px; color:var(--text-muted); margin-top:2px;}}
 
-    .bar-row {display:flex; align-items:center; margin:9px 0; font-size:13px;}
-    .bar-name {width:110px; color:#374151; text-transform:capitalize;}
-    .bar-track {flex:1; background:#eef2f7; border-radius:6px; height:9px; overflow:hidden; margin:0 12px;}
-    .bar-fill {height:100%; border-radius:6px;}
-    .bar-val {width:54px; text-align:right; font-weight:700;}
+    .bar-row {{display:flex; align-items:center; margin:9px 0; font-size:13px;}}
+    .bar-name {{width:110px; color:var(--text-soft); text-transform:capitalize;}}
+    .bar-track {{flex:1; background:var(--track); border-radius:6px; height:9px; overflow:hidden; margin:0 12px;}}
+    .bar-fill {{height:100%; border-radius:6px;}}
+    .bar-val {{width:54px; text-align:right; font-weight:700;}}
+    .scores-title {{font-weight:700; color:var(--text-soft); margin:6px 0 4px;}}
 
-    .ok-note {color:#059669; font-size:13px; font-weight:600;}
-    .warn-note {color:#d97706; font-size:13px; font-weight:600;}
+    .ok-note {{color:#10b981; font-size:13px; font-weight:600;}}
+    .warn-note {{color:#f59e0b; font-size:13px; font-weight:600;}}
 
-    .badge {
+    .empty-note {{color:var(--text-muted);}}
+    .meta-line {{color:var(--text-muted); font-size:12px;}}
+    .preview-line {{color:var(--text-soft); font-size:14px; margin-top:8px;}}
+    .count-line {{color:var(--text-muted); font-size:13px;}}
+
+    .badge {{
         display:inline-block; padding:3px 10px; border-radius:999px;
         font-size:11px; font-weight:700; color:white; text-transform:capitalize;
-    }
+    }}
 
-    div.stButton > button {border-radius:10px; font-weight:600;}
+    div.stButton > button {{border-radius:10px; font-weight:600;}}
 </style>
 """
-st.markdown(CSS, unsafe_allow_html=True)
+
+
+st.markdown(build_css(st.session_state.theme), unsafe_allow_html=True)
 
 
 # --------------------------------------------------------------------------- #
@@ -128,6 +227,7 @@ def _init_state() -> None:
     st.session_state.setdefault("last_result", None)
     st.session_state.setdefault("input_text", "")
     st.session_state.setdefault("model_key", DEFAULT_MODEL)
+    st.session_state.setdefault("theme", "light")
 
 
 _init_state()
@@ -164,14 +264,20 @@ def render_header() -> None:
         </div>
         """
     )
-    nav = st.columns([1, 1, 1, 4])
+    nav = st.columns([1, 1, 1, 3, 1])
     pages = ["Classifier", "Session History", "About"]
-    for col, name in zip(nav, pages):
+    for col, name in zip(nav[:3], pages):
         with col:
             kind = "primary" if st.session_state.page == name else "secondary"
             if st.button(name, key=f"nav_{name}", use_container_width=True, type=kind):
                 st.session_state.page = name
                 st.rerun()
+    with nav[4]:
+        is_dark = st.session_state.theme == "dark"
+        toggle_label = "☀️ Light" if is_dark else "🌙 Dark"
+        if st.button(toggle_label, key="theme_toggle", use_container_width=True):
+            st.session_state.theme = "light" if is_dark else "dark"
+            st.rerun()
 
 
 # --------------------------------------------------------------------------- #
@@ -179,10 +285,7 @@ def render_header() -> None:
 # --------------------------------------------------------------------------- #
 def render_scores(scores: dict[str, float]) -> None:
     ordered = sorted(scores.items(), key=lambda kv: kv[1], reverse=True)
-    parts = [
-        '<div style="font-weight:700;color:#374151;margin:6px 0 4px;">'
-        "📊 Confidence Scores</div>"
-    ]
+    parts = ['<div class="scores-title">📊 Confidence Scores</div>']
     for cat, prob in ordered:
         pct = prob * 100
         color = _color(cat)
@@ -214,7 +317,7 @@ def page_classifier() -> None:
                 <p class="card-title">Input Section</p>
                 <p class="card-sub">Paste news text for classification</p>
               </div>
-              <div style="color:#6b7280;font-size:13px;">{chars:,} chars &nbsp;|&nbsp; {words:,} words</div>
+              <div class="count-line">{chars:,} chars &nbsp;|&nbsp; {words:,} words</div>
             </div>
             """
         )
@@ -277,7 +380,7 @@ def page_classifier() -> None:
         result = st.session_state.last_result
         if result is None:
             st.markdown(
-                '<div class="card" style="text-align:center;color:#9ca3af;padding:60px 24px;">'
+                '<div class="card empty-note" style="text-align:center;padding:60px 24px;">'
                 "🔎<br><br>Enter article text and click <b>Analyze Text</b> to see the "
                 "predicted category and confidence scores.</div>",
                 unsafe_allow_html=True,
@@ -398,10 +501,10 @@ def page_history() -> None:
             f"""
             <div class="card" style="margin-bottom:10px;padding:14px 18px;">
               <span class="badge" style="background:{color};">{h['category']}</span>
-              <span style="float:right;color:#6b7280;font-size:12px;">
+              <span class="meta-line" style="float:right;">
                 {h['confidence']*100:.1f}% &middot; {h['model']} &middot; {h['timestamp']}
               </span>
-              <div style="margin-top:8px;color:#374151;font-size:14px;">{h['preview']}&hellip;</div>
+              <div class="preview-line">{h['preview']}&hellip;</div>
             </div>
             """
         )
