@@ -1,0 +1,14 @@
+[theme]
+# Force a permanent dark ("night") theme so native Streamlit widgets match the
+# dark custom components in app/streamlit_app.py.
+base = "dark"
+primaryColor = "#6366f1"
+backgroundColor = "#0b1120"
+secondaryBackgroundColor = "#1e293b"
+textColor = "#f8fafc"
+
+[server]
+# Disable the source-file watcher. It otherwise imports every transformers
+# image-processing module on startup, which floods the logs with harmless
+# "No module named 'torchvision'" tracebacks (torchvision isn't needed here).
+fileWatcherType = "none"

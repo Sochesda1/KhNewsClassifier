@@ -48,54 +48,31 @@ DEFAULT_COLOR = "#64748b"
 
 MIN_WORDS = 50
 
-# Two palettes driven by a session-state toggle. Every custom component reads
-# these via CSS variables so light/dark stay in sync and keep proper contrast.
-THEMES = {
-    "light": {
-        "bg": "#f1f5f9",
-        "text": "#111827",
-        "text_muted": "#6b7280",
-        "text_soft": "#374151",
-        "card_bg": "#ffffff",
-        "card_border": "#e5e7eb",
-        "card_shadow": "0 1px 3px rgba(0,0,0,0.04)",
-        "stat_bg": "#f8fafc",
-        "stat_border": "#eef2f7",
-        "track": "#eef2f7",
-        "result_bg": "linear-gradient(135deg,#f5f3ff,#faf5ff)",
-        "result_border": "#ede9fe",
-        "pill_bg": "#ede9fe",
-        "pill_text": "#6d28d9",
-        "input_bg": "#ffffff",
-        "input_border": "#d1d5db",
-        "placeholder": "#9ca3af",
-    },
-    "dark": {
-        "bg": "#0b1120",
-        "text": "#f8fafc",
-        "text_muted": "#94a3b8",
-        "text_soft": "#cbd5e1",
-        "card_bg": "#1e293b",
-        "card_border": "#334155",
-        "card_shadow": "0 1px 3px rgba(0,0,0,0.4)",
-        "stat_bg": "#0f172a",
-        "stat_border": "#334155",
-        "track": "#334155",
-        "result_bg": "linear-gradient(135deg,#312e81,#1e1b4b)",
-        "result_border": "#4c1d95",
-        "pill_bg": "#4c1d95",
-        "pill_text": "#ddd6fe",
-        "input_bg": "#1e293b",
-        "input_border": "#334155",
-        "placeholder": "#64748b",
-    },
+# Single dark palette. Every custom component reads these via CSS variables so
+# the whole dashboard stays in a consistent, high-contrast night mode.
+THEME = {
+    "bg": "#0b1120",
+    "text": "#f8fafc",
+    "text_muted": "#94a3b8",
+    "text_soft": "#cbd5e1",
+    "card_bg": "#1e293b",
+    "card_border": "#334155",
+    "card_shadow": "0 1px 3px rgba(0,0,0,0.4)",
+    "stat_bg": "#0f172a",
+    "stat_border": "#334155",
+    "track": "#334155",
+    "result_bg": "linear-gradient(135deg,#312e81,#1e1b4b)",
+    "result_border": "#4c1d95",
+    "pill_bg": "#4c1d95",
+    "pill_text": "#ddd6fe",
+    "input_bg": "#1e293b",
+    "input_border": "#334155",
+    "placeholder": "#64748b",
 }
 
-st.session_state.setdefault("theme", "light")
 
-
-def build_css(theme: str) -> str:
-    v = THEMES.get(theme, THEMES["light"])
+def build_css() -> str:
+    v = THEME
     return f"""
 <style>
     :root {{
@@ -215,7 +192,7 @@ def build_css(theme: str) -> str:
 """
 
 
-st.markdown(build_css(st.session_state.theme), unsafe_allow_html=True)
+st.markdown(build_css(), unsafe_allow_html=True)
 
 
 # --------------------------------------------------------------------------- #
@@ -227,7 +204,6 @@ def _init_state() -> None:
     st.session_state.setdefault("last_result", None)
     st.session_state.setdefault("input_text", "")
     st.session_state.setdefault("model_key", DEFAULT_MODEL)
-    st.session_state.setdefault("theme", "light")
 
 
 _init_state()
@@ -264,20 +240,14 @@ def render_header() -> None:
         </div>
         """
     )
-    nav = st.columns([1, 1, 1, 3, 1])
+    nav = st.columns([1, 1, 1, 4])
     pages = ["Classifier", "Session History", "About"]
-    for col, name in zip(nav[:3], pages):
+    for col, name in zip(nav, pages):
         with col:
             kind = "primary" if st.session_state.page == name else "secondary"
             if st.button(name, key=f"nav_{name}", use_container_width=True, type=kind):
                 st.session_state.page = name
                 st.rerun()
-    with nav[4]:
-        is_dark = st.session_state.theme == "dark"
-        toggle_label = "☀️ Light" if is_dark else "🌙 Dark"
-        if st.button(toggle_label, key="theme_toggle", use_container_width=True):
-            st.session_state.theme = "light" if is_dark else "dark"
-            st.rerun()
 
 
 # --------------------------------------------------------------------------- #
